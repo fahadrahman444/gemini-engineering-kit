@@ -1,0 +1,6 @@
+# Ignore machine-local state and credentials
+config.json
+projects/
+sidecars/
+.migrated
+*.log
