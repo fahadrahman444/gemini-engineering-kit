@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# Gemini Engineering Kit CLI - Universal Developer & Agent Tool
+set -e
+
+KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+VERSION=$(cat "${KIT_DIR}/VERSION" 2>/dev/null || echo "1.0.0")
+
+GREEN="\033[0;32m"
+CYAN="\033[0;36m"
+YELLOW="\033[0;33m"
+BOLD="\033[1m"
+RESET="\033[0m"
+
+show_help() {
+    echo -e "${BOLD}${CYAN}Gemini Engineering Kit CLI (v${VERSION})${RESET}"
+    echo -e "Universal AI agent rules, architecture blueprints, and deterministic tools."
+    echo ""
+    echo -e "${BOLD}Usage:${RESET}"
+    echo -e "  gemini-kit <command> [arguments]"
+    echo ""
+    echo -e "${BOLD}Commands:${RESET}"
+    echo -e "  ${GREEN}init${RESET}        Bootstrap .agents/ structure and AGENTS.md in current project"
+    echo -e "  ${GREEN}doctor${RESET}      Run diagnostic health check on global environment"
+    echo -e "  ${GREEN}stack${RESET}       Detect language, framework, database, and recommended skills"
+    echo -e "  ${GREEN}verify${RESET}      Run deterministic typecheck, lint, and tests on current project"
+    echo -e "  ${GREEN}audit${RESET}       Execute deterministic security, secret, and code-slop audit"
+    echo -e "  ${GREEN}update${RESET}      Pull latest engineering kit updates from GitHub"
+    echo -e "  ${GREEN}uninstall${RESET}   Safely uninstall the engineering kit with backup options"
+    echo -e "  ${GREEN}version${RESET}     Show current version"
+    echo -e "  ${GREEN}help${RESET}        Display this help message"
+    echo ""
+}
+
+COMMAND="$1"
+shift || true
+
+case "$COMMAND" in
+    init)
+        echo -e "${CYAN}==> Bootstrapping Gemini Agent project structure in $(pwd)...${RESET}"
+        mkdir -p .agents/state .agents/plans .agents/audits
+        
+        # Copy structured templates if missing
+        if [ ! -f ".agents/state/architecture.md" ]; then
+            cp "${KIT_DIR}/templates/STATE.md" .agents/state/architecture.md 2>/dev/null || touch .agents/state/architecture.md
+        fi
+        if [ ! -f "AGENTS.md" ]; then
+            cp "${KIT_DIR}/AGENTS.md" ./AGENTS.md
+            echo -e "${GREEN}✓ Created AGENTS.md${RESET}"
+        fi
+        
+        echo -e "${GREEN}✓ Initialized .agents/ (state, plans, audits)${RESET}"
+        "${KIT_DIR}/scripts/detect-stack.sh" .
+        ;;
+    doctor)
+        "${KIT_DIR}/scripts/doctor.sh"
+        ;;
+    stack)
+        "${KIT_DIR}/scripts/detect-stack.sh" "${1:-.}"
+        ;;
+    verify)
+        "${KIT_DIR}/scripts/verify.sh" "${1:-.}"
+        ;;
+    audit)
+        "${KIT_DIR}/scripts/audit.sh" "${1:-.}" "$2"
+        ;;
+    update)
+        echo -e "${CYAN}==> Updating Gemini Engineering Kit from GitHub...${RESET}"
+        cd "${KIT_DIR}"
+        if [ -d ".git" ]; then
+            git pull origin main
+            echo -e "${GREEN}✓ Successfully updated to latest version!${RESET}"
+        else
+            echo -e "${YELLOW}Warning: Kit directory is not a git repository. Re-run installer.${RESET}"
+        fi
+        ;;
+    uninstall)
+        "${KIT_DIR}/uninstall.sh"
+        ;;
+    version|-v|--version)
+        echo "gemini-kit version ${VERSION}"
+        ;;
+    help|--help|-h|"")
+        show_help
+        ;;
+    *)
+        echo -e "Unknown command: $COMMAND"
+        show_help
+        exit 1
+        ;;
+esac

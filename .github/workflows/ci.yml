@@ -1,0 +1,51 @@
+name: CI & Engineering Kit Verification
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Verify Shell Scripts Syntax (Bash -n)
+        run: |
+          for f in install.sh uninstall.sh bin/gemini-kit scripts/*.sh; do
+            if [ -f "$f" ]; then
+              bash -n "$f"
+              echo "✓ Syntax OK: $f"
+            fi
+          done
+
+      - name: Test Idempotent Installation in Clean Sandbox
+        run: |
+          export HOME=$(mktemp -d)
+          mkdir -p $HOME/.gemini/config
+          cp -r ./* $HOME/.gemini/config/
+          
+          # Run Doctor check
+          bash $HOME/.gemini/config/scripts/doctor.sh
+          
+          # Run Installer Twice (idempotency check)
+          bash $HOME/.gemini/config/install.sh
+          bash $HOME/.gemini/config/install.sh
+
+      - name: Validate SKILL.md Frontmatter & Structure
+        run: |
+          for skill in skills/*/SKILL.md; do
+            echo "Checking $skill..."
+            head -n 5 "$skill" | grep -q "^name:" || (echo "Missing name in $skill" && exit 1)
+            head -n 5 "$skill" | grep -q "^description:" || (echo "Missing description in $skill" && exit 1)
+            echo "✓ Valid skill: $skill"
+          done
+
+      - name: Verify CLI Tools
+        run: |
+          chmod +x bin/gemini-kit
+          ./bin/gemini-kit doctor
+          ./bin/gemini-kit version
