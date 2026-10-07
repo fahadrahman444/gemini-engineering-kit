@@ -2,7 +2,13 @@
 # Gemini Engineering Kit CLI - Universal Developer & Agent Tool
 set -e
 
-KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do
+  DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+KIT_DIR="$(cd -P "$(dirname "$SOURCE")/.." && pwd)"
 VERSION=$(cat "${KIT_DIR}/VERSION" 2>/dev/null || echo "1.0.0")
 
 GREEN="\033[0;32m"
